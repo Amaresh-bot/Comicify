@@ -1,0 +1,7 @@
+flask
+opencv-python-headless
+yt-dlp
+youtube-transcript-api
+img2pdf
+natsort
+openai-whisper

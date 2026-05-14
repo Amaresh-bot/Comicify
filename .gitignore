@@ -1,0 +1,7 @@
+/Myenv
+__pycache__
+/frames*.pdf 
+*.mp4 
+*.mp3 
+*.srt 
+frames_* 
