@@ -5,3 +5,4 @@ youtube-transcript-api
 img2pdf
 natsort
 openai-whisper
+static-ffmpeg
