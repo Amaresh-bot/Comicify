@@ -4,6 +4,8 @@ import uuid
 import os
 import traceback
 from converttocomic import convertVideoToComic
+import static_ffmpeg
+static_ffmpeg.add_paths()
 
 app = Flask(__name__)
 
