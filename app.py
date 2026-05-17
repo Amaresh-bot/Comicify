@@ -1,55 +1,33 @@
-from flask import Flask, render_template, request, send_file, jsonify
-import threading
-import uuid
-import os
-import traceback
-from converttocomic import convertVideoToComic
-import static_ffmpeg
-static_ffmpeg.add_paths()
+from flask import Flask, render_template, request, jsonify
+from youtube_transcript_api import YouTubeTranscriptApi
 
 app = Flask(__name__)
-
-# Track job status
-jobs = {}
-
-def run_job(job_id, youtube_link):
-    try:
-        jobs[job_id] = {'status': 'running', 'message': 'Downloading video...'}
-        convertVideoToComic(youtube_link, job_id)
-        jobs[job_id] = {'status': 'done', 'message': 'PDF ready!'}
-    except Exception as e:
-        jobs[job_id] = {'status': 'error', 'message': str(e)}
-        traceback.print_exc()
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
-@app.route('/generate', methods=['POST'])
-def generate():
+@app.route('/transcript', methods=['POST'])
+def transcript():
     data = request.get_json()
     link = data.get('link', '').strip()
-    if not link or 'youtube.com' not in link and 'youtu.be' not in link:
-        return jsonify({'error': 'Please provide a valid YouTube URL'}), 400
 
-    job_id = str(uuid.uuid4())
-    jobs[job_id] = {'status': 'pending', 'message': 'Starting...'}
-    thread = threading.Thread(target=run_job, args=(job_id, link))
-    thread.daemon = True
-    thread.start()
-    return jsonify({'job_id': job_id})
+    try:
+        if 'v=' in link:
+            video_id = link.split('v=')[1].split('&')[0]
+        elif 'youtu.be/' in link:
+            video_id = link.split('youtu.be/')[1].split('?')[0]
+        else:
+            return jsonify({'error': 'Invalid YouTube URL'}), 400
 
-@app.route('/status/<job_id>')
-def status(job_id):
-    job = jobs.get(job_id, {'status': 'not_found', 'message': 'Job not found'})
-    return jsonify(job)
+        ytt = YouTubeTranscriptApi()
+        transcript_data = ytt.fetch(video_id)
+        segments = [{'start': s['start'], 'duration': s['duration'], 'text': s['text']} for s in transcript_data]
+        return jsonify({'segments': segments, 'video_id': video_id})
 
-@app.route('/download/<job_id>')
-def download(job_id):
-    pdf_path = f'output_{job_id}.pdf'
-    if os.path.exists(pdf_path):
-        return send_file(pdf_path, as_attachment=True, download_name='comic.pdf')
-    return jsonify({'error': 'File not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
+    import os
     app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
