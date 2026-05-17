@@ -1,9 +1,9 @@
 flask
+gunicorn
 opencv-python-headless
 yt-dlp
 youtube-transcript-api
 img2pdf
 natsort
 openai-whisper
-static-ffmpeg
-gunicorn
+ffmpeg-python
